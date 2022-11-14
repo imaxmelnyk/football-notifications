@@ -5,7 +5,7 @@ scalaVersion := "2.13.10"
 
 libraryDependencies ++= Dependencies.allDeps
 
-assembly / assemblyJarName := s"${name.value}-${version.value}-assembly.jar"
+assembly / assemblyJarName := s"${name.value}-assembly.jar"
 assembly / test := {} // don't run tests when assembling app
 assembly / assemblyMergeStrategy := {
   case "module-info.class" => MergeStrategy.last
