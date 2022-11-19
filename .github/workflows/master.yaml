@@ -55,6 +55,10 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v3
 
+      - name: Set Custom Variables
+        id: vars
+        run: echo "sha_short=$(git rev-parse --short HEAD)" >> $GITHUB_OUTPUT
+
       - name: Download Assembly Artifact
         uses: actions/download-artifact@v3
         with:
@@ -72,4 +76,4 @@ jobs:
         with:
           context: .
           push: true
-          tags: ${{ secrets.DOCKERHUB_USERNAME }}/football-notifications:${{ github.sha }}
+          tags: ${{ secrets.DOCKERHUB_USERNAME }}/football-notifications:${{ steps.vars.outputs.sha_short }}
