@@ -21,5 +21,7 @@ object Dependencies {
 
   private val telegram = Seq("com.bot4s" %% "telegram-core" % "5.6.1")
 
-  val allDeps: Seq[ModuleID] = logging ++ config ++ cats ++ http4s ++ sttp ++ telegram
+  private val test = Seq("org.scalatest" %% "scalatest" % "3.2.14" % "test")
+
+  val allDeps: Seq[ModuleID] = logging ++ config ++ cats ++ http4s ++ sttp ++ telegram ++ test
 }

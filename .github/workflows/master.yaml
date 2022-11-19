@@ -1,0 +1,82 @@
+name: 'Master'
+
+on:
+  push:
+    branches: [ "master" ]
+
+jobs:
+  test-assembly:
+    name: 'Test and Assembly'
+    runs-on: ubuntu-latest
+
+    defaults:
+      run:
+        shell: bash
+
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v3
+
+    - name: Setup Java
+      uses: actions/setup-java@v3
+      with:
+        java-version: 17
+        distribution: zulu
+        cache: sbt
+
+    - name: Run Tests
+      run: sbt test
+
+    - name: Test Report
+      uses: mikepenz/action-junit-report@v3
+      if: always()
+      with:
+        check_name: Test Report
+        report_paths: target/test-reports/TEST-*.xml
+
+    - name: Assembly
+      run: sbt assembly
+
+    - name: Upload Assembly Artifact
+      uses: actions/upload-artifact@v3
+      with:
+        name: assembly
+        path: target/scala-2.13/football-notifications-assembly.jar
+
+  build-publish:
+    name: 'Build and Publish (Docker)'
+    needs: test-assembly
+    runs-on: ubuntu-latest
+
+    defaults:
+      run:
+        shell: bash
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+
+      - name: Set Custom Variables
+        id: vars
+        run: echo "sha_short=$(echo ${{ github.sha }} | cut -c1-7)" >> $GITHUB_OUTPUT
+
+      - name: Download Assembly Artifact
+        uses: actions/download-artifact@v3
+        with:
+          name: assembly
+          path: target/scala-2.13
+
+      - name: Login to Docker Hub
+        uses: docker/login-action@v2
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      - name: Build and Push Image
+        uses: docker/build-push-action@v3
+        with:
+          context: .
+          push: true
+          tags: |
+            ${{ secrets.DOCKERHUB_USERNAME }}/football-notifications:${{ steps.vars.outputs.sha_short }}
+            ${{ secrets.DOCKERHUB_USERNAME }}/football-notifications:${{ github.ref_name }}
