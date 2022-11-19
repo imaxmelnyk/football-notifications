@@ -66,8 +66,9 @@ jobs:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
 
-      - name: Build and push
+      - name: Build and Push Image
         uses: docker/build-push-action@v3
         with:
+          context: .
           push: true
-          tags: imaxmelnyk/football-notifications:${GITHUB_SHA::6}
+          tags: ${{ secrets.DOCKERHUB_USERNAME }}/football-notifications:${{ github.sha }}
