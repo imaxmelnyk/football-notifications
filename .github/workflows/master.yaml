@@ -1,0 +1,43 @@
+name: 'Master'
+
+on:
+  push:
+    branches: [ "ci" ]
+
+jobs:
+  test-assembly:
+    name: 'Test and Assembly'
+    runs-on: ubuntu-latest
+
+    defaults:
+      run:
+        shell: bash
+
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v3
+
+    - name: Setup Java
+      uses: actions/setup-java@v3
+      with:
+        java-version: '17'
+        distribution: 'zulu'
+        cache: 'sbt'
+
+    - name: Run Tests
+      run: sbt test
+
+    - name: Test Report
+      uses: mikepenz/action-junit-report@v3
+      if: always()
+      with:
+        report_paths: 'target/test-reports/TEST-*.xml'
+
+    - name: Assembly
+      run: sbt assembly
+
+    - name: Upload Assembly Artifact
+      uses: actions/upload-artifact@v3
+      with:
+        name: assembly
+        path: 'target/scala-2.13/football-notifications-assembly.jar'
