@@ -7,6 +7,12 @@ object Dependencies {
     "ch.qos.logback" % "logback-classic" % "1.4.4",
     "com.typesafe.scala-logging" %% "scala-logging" % "3.9.5")
 
+  private val circeVersion = "0.14.3"
+  private val circe = Seq(
+    "io.circe" %% "circe-core" % circeVersion,
+    "io.circe" %% "circe-generic" % circeVersion,
+    "io.circe" %% "circe-parser" % circeVersion)
+
   private val cats = Seq("org.typelevel" %% "cats-effect" % "3.3.14")
 
   private val http4sVersion = "0.23.12"
@@ -23,5 +29,5 @@ object Dependencies {
 
   private val test = Seq("org.scalatest" %% "scalatest" % "3.2.14" % "test")
 
-  val allDeps: Seq[ModuleID] = logging ++ config ++ cats ++ http4s ++ sttp ++ telegram ++ test
+  val allDeps: Seq[ModuleID] = logging ++ config ++ circe ++ cats ++ http4s ++ sttp ++ telegram ++ test
 }
