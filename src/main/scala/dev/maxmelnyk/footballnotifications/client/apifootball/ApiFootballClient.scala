@@ -11,7 +11,8 @@ import sttp.client3.{SttpBackend, UriContext, basicRequest}
 import sttp.model.Uri
 
 trait ApiFootballClient[F[_]] {
-  def searchTeams(query: String): F[Either[Exception, Seq[Team]]]
+  def searchTeams(query: String): F[Seq[Team]]
+  def getTeamById(id: Int): F[Option[Team]]
 }
 
 object ApiFootballClient {
@@ -27,14 +28,21 @@ private class DefaultApiFootballClient[F[_]: Async](sttpBackend: SttpBackend[F, 
 
   import DefaultApiFootballClient._
 
-  def searchTeams(query: String): F[Either[Exception, Seq[Team]]] = {
-    request[Seq[TeamWithVenue]](uri"$baseUrl/teams?search=$query").map {
-      case Right(teamsWithVenues) => Right(teamsWithVenues.map(_.team))
-      case Left(error) => Left(error)
+  def searchTeams(query: String): F[Seq[Team]] = {
+    request[Seq[TeamWithVenue]](uri"$baseUrl/teams?search=$query").map { teamsWithVenues =>
+      teamsWithVenues.map(_.team)
     }
   }
 
-  private def request[R: Decoder](uri: Uri): F[Either[Exception, R]] = {
+  def getTeamById(id: Int): F[Option[Team]] = {
+    request[Seq[TeamWithVenue]](uri"$baseUrl/teams?id=$id").map {
+      case Seq(teamsWithVenue) => Some(teamsWithVenue.team)
+      case Seq() => None
+      case Seq() => throw new Exception(s"More than one team found for id $id")
+    }
+  }
+
+  private def request[R: Decoder](uri: Uri): F[R] = {
     basicRequest
       .get(uri)
       .header(authHeader, Config.apiFootballApiKey)
@@ -42,16 +50,18 @@ private class DefaultApiFootballClient[F[_]: Async](sttpBackend: SttpBackend[F, 
         case Right(responseBodyStr) =>
           decode[Response[R]](responseBodyStr)(Response.responseDecoder) match {
             case Right(response) =>
-              response.getErrorsMessage.foreach(logger.info(_))
-              Right(response.response)
+              response.getErrorsMessage.foreach { error =>
+                logger.info(error)
+              }
+              response.response
             case Left(error) =>
               logger.error(s"Failed to parse response from API Football: $error")
-              Left(new Exception(s"Failed to decode response body: $responseBodyStr", error))
+              throw new Exception(s"Failed to decode response body: $responseBodyStr", error)
           }
         case Left(responseBodyStr) =>
           decode[ErrorResponse](responseBodyStr) match {
-            case Right(errorResponse) => Left(new Exception(errorResponse.message))
-            case Left(error) => Left(new Exception(s"Failed to decode error response body: $responseBodyStr", error))
+            case Right(errorResponse) => throw new Exception(errorResponse.message)
+            case Left(error) => throw new Exception(s"Failed to decode error response body: $responseBodyStr", error)
           }
       }
       .send(sttpBackend)

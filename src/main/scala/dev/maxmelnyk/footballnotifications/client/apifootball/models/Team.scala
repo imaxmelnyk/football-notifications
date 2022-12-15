@@ -6,7 +6,7 @@ import io.circe.generic.semiauto.{deriveDecoder, deriveEncoder}
 case class Team(id: Int,
                 name: String,
                 code: Option[String],
-                country: String,
+                country: Option[String],
                 founded: Option[Int],
                 national: Boolean,
                 logo: String)
