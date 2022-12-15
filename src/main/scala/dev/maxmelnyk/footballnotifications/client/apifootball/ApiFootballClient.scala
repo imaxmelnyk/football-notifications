@@ -1,10 +1,10 @@
 package dev.maxmelnyk.footballnotifications.client.apifootball
 
-import dev.maxmelnyk.footballnotifications.client.apifootball.models._
-import dev.maxmelnyk.footballnotifications.config.Config
-import cats.effect.Async
+import cats.Monad
 import cats.syntax.all._
 import com.typesafe.scalalogging.LazyLogging
+import dev.maxmelnyk.footballnotifications.client.apifootball.models._
+import dev.maxmelnyk.footballnotifications.config.Config
 import io.circe.Decoder
 import io.circe.parser.decode
 import sttp.client3.{SttpBackend, UriContext, basicRequest}
@@ -12,17 +12,18 @@ import sttp.model.Uri
 
 trait ApiFootballClient[F[_]] {
   def searchTeams(query: String): F[Seq[Team]]
+
   def getTeamById(id: Int): F[Option[Team]]
 }
 
 object ApiFootballClient {
-  def apply[F[_]: Async](sttpBackend: SttpBackend[F, Any]): ApiFootballClient[F] = {
+  def apply[F[_] : Monad](sttpBackend: SttpBackend[F, Any]): ApiFootballClient[F] = {
     new DefaultApiFootballClient[F](sttpBackend)
   }
 }
 
 
-private class DefaultApiFootballClient[F[_]: Async](sttpBackend: SttpBackend[F, Any])
+private class DefaultApiFootballClient[F[_] : Monad](sttpBackend: SttpBackend[F, Any])
   extends ApiFootballClient[F]
     with LazyLogging {
 

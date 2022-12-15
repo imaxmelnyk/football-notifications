@@ -1,8 +1,8 @@
 package dev.maxmelnyk.footballnotifications.client.apifootball.models
 
-import io.circe.{Decoder, Encoder, HCursor, Json}
-import io.circe.syntax.EncoderOps
 import io.circe.generic.semiauto.{deriveDecoder, deriveEncoder}
+import io.circe.syntax.EncoderOps
+import io.circe.{Decoder, Encoder, HCursor, Json}
 
 case class Response[R](get: String,
                        parameters: Map[String, String] = Map.empty,
