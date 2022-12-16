@@ -13,11 +13,13 @@ trait SubscriptionBot[F[_]]
     with Callbacks[F]
     with AnyLogging {
 
+  import SubscriptionBot._
+
   protected def apiFootballClient: ApiFootballClient[F]
 
   protected def subscriptionsDao: SubscriptionsDao[F]
 
-  onCommand("subscribe") { implicit msg =>
+  onCommand(subscribeTag) { implicit msg =>
     withArgs {
       case Seq() =>
         reply("Please, provide a team name you want to subscribe to.").void
@@ -32,7 +34,7 @@ trait SubscriptionBot[F[_]]
               reply(s"Too many teams found, please, try to be more specific.")
             case teams =>
               val buttons = teams.map { team =>
-                InlineKeyboardButton.callbackData(team.name, prefixTag("subscribe")(team.id.toString))
+                InlineKeyboardButton.callbackData(team.name, prefixTag(subscribeTag)(team.id.toString))
               }
               val markup = InlineKeyboardMarkup.singleColumn(buttons)
               reply(s"Please, choose a team you want to subscribe to:", replyMarkup = Some(markup))
@@ -41,7 +43,7 @@ trait SubscriptionBot[F[_]]
     }
   }
 
-  onCallbackWithTag("subscribe") { implicit cbq =>
+  onCallbackWithTag(subscribeTag) { implicit cbq =>
     for {
       data <- monad.fromOption(cbq.data, new Exception("No data in callback"))
       message <- monad.fromOption(cbq.message, new Exception("No message in callback"))
@@ -57,7 +59,7 @@ trait SubscriptionBot[F[_]]
     } yield ()
   }
 
-  onCommand("unsubscribe") { implicit msg =>
+  onCommand(unsubscribeTag) { implicit msg =>
     for {
       subscriptions <- subscriptionsDao.getByChatId(msg.chat.id)
       teamOpts <- subscriptions.traverse { subscription =>
@@ -69,7 +71,7 @@ trait SubscriptionBot[F[_]]
           reply("You are not subscribed to any team yet.")
         case teams =>
           val buttons = teams.map { team =>
-            InlineKeyboardButton.callbackData(team.name, prefixTag("unsubscribe")(team.id.toString))
+            InlineKeyboardButton.callbackData(team.name, prefixTag(unsubscribeTag)(team.id.toString))
           }
           val markup = InlineKeyboardMarkup.singleColumn(buttons)
           reply(s"Please, choose a team you want to unsubscribe from:", replyMarkup = Some(markup))
@@ -77,7 +79,7 @@ trait SubscriptionBot[F[_]]
     } yield ()
   }
 
-  onCallbackWithTag("unsubscribe") { implicit cbq =>
+  onCallbackWithTag(unsubscribeTag) { implicit cbq =>
     for {
       data <- monad.fromOption(cbq.data, new Exception("No data in callback"))
       message <- monad.fromOption(cbq.message, new Exception("No message in callback"))
@@ -92,4 +94,9 @@ trait SubscriptionBot[F[_]]
       _ <- ackCallback(Some(s"You have unsubscribed from '${team.name}'."))
     } yield ()
   }
+}
+
+object SubscriptionBot {
+  private val subscribeTag: String = "subscribe"
+  private val unsubscribeTag: String = "unsubscribe"
 }
