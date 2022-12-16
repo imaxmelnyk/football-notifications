@@ -4,10 +4,12 @@ import cats.MonadError
 import com.bot4s.telegram.cats.{Polling, TelegramBot}
 import dev.maxmelnyk.footballnotifications.client.apifootball.ApiFootballClient
 import dev.maxmelnyk.footballnotifications.config.Config
+import dev.maxmelnyk.footballnotifications.db.dao.SubscriptionsDao
 import sttp.client3.SttpBackend
 
 class Bot[F[_]](sttpBackend: SttpBackend[F, Any],
-                protected val apiFootballClient: ApiFootballClient[F])
+                protected val apiFootballClient: ApiFootballClient[F],
+                protected val subscriptionsDao: SubscriptionsDao[F])
                (implicit monadError: MonadError[F, Throwable])
   extends TelegramBot[F](Config.telegramBotToken, sttpBackend)
     with Polling[F]
@@ -15,8 +17,9 @@ class Bot[F[_]](sttpBackend: SttpBackend[F, Any],
 
 object Bot {
   def apply[F[_]](sttpBackend: SttpBackend[F, Any],
-                  apiFootballClient: ApiFootballClient[F])
+                  apiFootballClient: ApiFootballClient[F],
+                  subscriptionsDao: SubscriptionsDao[F])
                  (implicit monadError: MonadError[F, Throwable]): Bot[F] = {
-    new Bot(sttpBackend, apiFootballClient)
+    new Bot(sttpBackend, apiFootballClient, subscriptionsDao)
   }
 }

@@ -5,6 +5,8 @@ import com.bot4s.telegram.api.declarative.{Callbacks, Commands}
 import com.bot4s.telegram.models.{InlineKeyboardButton, InlineKeyboardMarkup}
 import com.typesafe.scalalogging.AnyLogging
 import dev.maxmelnyk.footballnotifications.client.apifootball.ApiFootballClient
+import dev.maxmelnyk.footballnotifications.db.dao.SubscriptionsDao
+import dev.maxmelnyk.footballnotifications.db.models.Subscription
 
 trait SubscriptionBot[F[_]]
   extends Commands[F]
@@ -12,6 +14,8 @@ trait SubscriptionBot[F[_]]
     with AnyLogging {
 
   protected def apiFootballClient: ApiFootballClient[F]
+
+  protected def subscriptionsDao: SubscriptionsDao[F]
 
   onCommand("subscribe") { implicit msg =>
     withArgs {
@@ -54,7 +58,7 @@ trait SubscriptionBot[F[_]]
       teamOpt <- apiFootballClient.getTeamById(teamId)
       team <- monad.fromOption(teamOpt, new Exception(s"No team found for id $teamId"))
 
-      _ <- subscribe(teamId, chatId)
+      _ <- subscriptionsDao.upsert(Subscription(chatId, teamId))
       _ <- ackCallback(Some(s"You have subscribed to '${team.name}'."))
     } yield ()
 
@@ -64,6 +68,4 @@ trait SubscriptionBot[F[_]]
         ackCallback(Some("Error occurred, try again later."), showAlert = Some(true)).void
     }
   }
-
-  private def subscribe(teamId: Int, chatId: Long): F[Unit] = unit // TODO
 }
