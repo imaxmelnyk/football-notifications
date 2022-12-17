@@ -39,7 +39,7 @@ private class DefaultApiFootballClient[F[_] : Monad](sttpBackend: SttpBackend[F,
     request[Seq[TeamWithVenue]](uri"$baseUrl/teams?id=$id").map {
       case Seq(teamsWithVenue) => Some(teamsWithVenue.team)
       case Seq() => None
-      case Seq() => throw new Exception(s"More than one team found for id $id")
+      case _ => throw new Exception(s"More than one team found for id $id")
     }
   }
 
