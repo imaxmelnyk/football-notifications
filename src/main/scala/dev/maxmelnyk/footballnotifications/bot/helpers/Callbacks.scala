@@ -9,11 +9,11 @@ private[bot] trait Callbacks[F[_]]
   extends TelegramCallbacks[F]
     with AnyLogging {
 
-  override def onCallbackWithTag(tag: String)(action: Action[F, CallbackQuery]): Unit = {
-    super.onCallbackWithTag(tag) { implicit cbq =>
+  override def onCallbackQuery(action: Action[F, CallbackQuery]): Unit = {
+    super.onCallbackQuery { implicit cbq =>
       action(cbq).recoverWith {
         case e: Exception =>
-          logger.error(e.getMessage, e)
+          logger.error("Error occurred during processing callback.", e)
           ackCallback(Some("Error occurred, try again later.")).void
       }
     }

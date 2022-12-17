@@ -13,7 +13,7 @@ private[bot] trait Commands[F[_]]
     super.onCommand(filter) { implicit msg =>
       action(msg).recoverWith {
         case e: Exception =>
-          logger.error(e.getMessage, e)
+          logger.error("Error occurred during processing command.", e)
           reply("Error occurred, try again later.").void
       }
     }
