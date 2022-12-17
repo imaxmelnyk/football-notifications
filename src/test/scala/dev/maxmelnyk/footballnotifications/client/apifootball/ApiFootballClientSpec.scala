@@ -83,6 +83,7 @@ class ApiFootballClientSpec extends AnyFlatSpec with Matchers with PrivateMethod
     val actual = client.searchTeams("no such team")
 
     actual shouldEqual List.empty
+    assert(false)
   }
 
   it should "get team by id (exists)" in {
