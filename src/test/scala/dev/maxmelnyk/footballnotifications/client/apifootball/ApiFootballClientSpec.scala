@@ -35,7 +35,6 @@ class ApiFootballClientSpec extends AnyFlatSpec with Matchers with PrivateMethod
     client invokePrivate request(uri, implicitly[Decoder[R]])
   }
 
-
   "Football API Client" should "search teams (some results)" in {
     val sttpBackend = SttpBackendStub.synchronous
       .whenRequestMatches { request =>

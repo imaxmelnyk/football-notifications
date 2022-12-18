@@ -8,14 +8,7 @@ import org.scalatest.flatspec.AsyncFlatSpec
 import org.scalatest.matchers.should.Matchers
 
 class SubscriptionsDaoSpec extends AsyncFlatSpec with DatabaseSpec with Matchers {
-  private var dao: SubscriptionsDao[IO] = _
-
-  override def beforeEach(): Unit = {
-    super.beforeEach()
-
-    dao = SubscriptionsDao(transactor)
-  }
-
+  private lazy val dao: SubscriptionsDao[IO] = SubscriptionsDao(transactor)
 
   "Subscriptions DAO" should "upsert (create)" in {
     val subscription = Subscription(1, 1)

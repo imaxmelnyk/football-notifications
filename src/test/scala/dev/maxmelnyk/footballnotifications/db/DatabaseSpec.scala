@@ -10,30 +10,30 @@ import org.scalatest.{AsyncTestSuite, BeforeAndAfterEach}
 trait DatabaseSpec extends AsyncIOSpec with BeforeAndAfterEach {
   this: AsyncTestSuite =>
 
-  protected var transactor: Transactor[IO] = _
-  private var flyway: Flyway = _
+  private val dbUrl = "jdbc:h2:mem:test;DB_CLOSE_DELAY=-1"
+  private val dbUser = "sa"
+  private val dbPassword = ""
 
-  override def beforeEach(): Unit = {
-    super.beforeEach()
+  protected lazy val transactor: Transactor[IO] = {
+    Transactor.fromDriverManager[IO](
+      classOf[Driver].getName,
+      dbUrl,
+      dbUser,
+      dbPassword)
+  }
 
-    val dbUrl = "jdbc:h2:mem:test;DB_CLOSE_DELAY=-1"
-    val dbUser = "sa"
-    val dbPassword = ""
-
-    transactor = Transactor.fromDriverManager[IO](classOf[Driver].getName, dbUrl, dbUser, dbPassword)
-
-    flyway = Flyway.configure()
+  private lazy val flyway: Flyway =  {
+    Flyway.configure()
       .dataSource(dbUrl, dbUser, dbPassword)
       .locations("migrations")
       .cleanDisabled(false)
       .load()
-
-    flyway.migrate()
   }
 
-  override def afterEach(): Unit = {
-    flyway.clean()
+  override def beforeEach(): Unit = {
+    super.beforeEach()
 
-    super.afterEach()
+    flyway.clean()
+    flyway.migrate()
   }
 }
