@@ -19,8 +19,7 @@ object Dependencies {
   private val doobie = Seq(
     "org.tpolecat" %% "doobie-core" % doobieVersion,
     "org.tpolecat" %% "doobie-postgres" % doobieVersion,
-    "org.tpolecat" %% "doobie-hikari" % doobieVersion,
-    "org.tpolecat" %% "doobie-specs2" % doobieVersion)
+    "org.tpolecat" %% "doobie-hikari" % doobieVersion)
 
   private val http4sVersion = "0.23.12"
   private val http4s = Seq(
@@ -34,7 +33,11 @@ object Dependencies {
 
   private val telegram = Seq("com.bot4s" %% "telegram-core" % "5.6.1")
 
-  private val test = Seq("org.scalatest" %% "scalatest" % "3.2.14" % "test")
+  private val test = Seq(
+    "org.scalatest" %% "scalatest" % "3.2.14" % Test,
+    "org.typelevel" %% "cats-effect-testing-scalatest" % "1.5.0" % Test,
+    "com.h2database" % "h2" % "2.1.214" % Test,
+    "org.flywaydb" % "flyway-core" % "9.10.1" % Test)
 
   val allDeps: Seq[ModuleID] = logging ++ config ++ circe ++ cats ++ doobie ++ http4s ++ sttp ++ telegram ++ test
 }
