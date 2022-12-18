@@ -1,0 +1,19 @@
+version: "3.9"
+services:
+  db:
+    image: postgres:15.1-alpine
+    restart: always
+    environment:
+      - POSTGRES_USER=user
+      - POSTGRES_PASSWORD=pass
+      - POSTGRES_DB=football_notifications
+    ports:
+      - 5432:5432
+
+  migration:
+    image: flyway/flyway:9.10-alpine
+    command: -url=jdbc:postgresql://db:5432/football_notifications -user=user -password=pass migrate
+    volumes:
+      - ../src/main/resources/migrations:/flyway/sql
+    depends_on:
+      - db
