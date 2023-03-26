@@ -1,6 +1,6 @@
 package dev.maxmelnyk.footballnotifications.client.apifootball
 
-import cats.Monad
+import cats.MonadThrow
 import cats.syntax.all._
 import com.typesafe.scalalogging.LazyLogging
 import dev.maxmelnyk.footballnotifications.client.apifootball.models._
@@ -17,13 +17,13 @@ trait ApiFootballClient[F[_]] {
 }
 
 object ApiFootballClient {
-  def apply[F[_] : Monad](sttpBackend: SttpBackend[F, Any]): ApiFootballClient[F] = {
+  def apply[F[_] : MonadThrow](sttpBackend: SttpBackend[F, Any]): ApiFootballClient[F] = {
     new DefaultApiFootballClient[F](sttpBackend)
   }
 }
 
 
-private class DefaultApiFootballClient[F[_] : Monad](sttpBackend: SttpBackend[F, Any])
+private class DefaultApiFootballClient[F[_] : MonadThrow](sttpBackend: SttpBackend[F, Any])
   extends ApiFootballClient[F]
     with LazyLogging {
 

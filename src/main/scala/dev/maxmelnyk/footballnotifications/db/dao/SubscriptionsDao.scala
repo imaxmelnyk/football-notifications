@@ -1,6 +1,6 @@
 package dev.maxmelnyk.footballnotifications.db.dao
 
-import cats.effect.kernel.MonadCancel
+import cats.effect.MonadCancelThrow
 import cats.syntax.all._
 import dev.maxmelnyk.footballnotifications.db.models.Subscription
 import doobie.implicits._
@@ -16,14 +16,14 @@ trait SubscriptionsDao[F[_]] {
 
 object SubscriptionsDao {
   def apply[F[_]](transactor: Transactor[F])
-                 (implicit monadCancel: MonadCancel[F, Throwable]): SubscriptionsDao[F] = {
+                 (implicit monad: MonadCancelThrow[F]): SubscriptionsDao[F] = {
     new DefaultSubscriptionsDao(transactor)
   }
 }
 
 
 private class DefaultSubscriptionsDao[F[_]](transactor: Transactor[F])
-                                           (implicit monadCancel: MonadCancel[F, Throwable])
+                                           (implicit monad: MonadCancelThrow[F])
   extends SubscriptionsDao[F] {
 
   def upsert(subscription: Subscription): F[Subscription] = {
