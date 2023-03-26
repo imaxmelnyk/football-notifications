@@ -6,10 +6,12 @@ import io.circe.syntax._
 import org.scalatest.PrivateMethodTester
 import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should.Matchers
-import sttp.client3.monad.IdMonad
 import sttp.client3.testing.SttpBackendStub
-import sttp.client3.{Identity, UriContext, Response => SttpResponse}
+import sttp.client3.{UriContext, Response => SttpResponse}
 import sttp.model.{StatusCode, Uri}
+import sttp.monad.TryMonad
+
+import scala.util.{Failure, Success, Try}
 
 class ApiFootballClientSpec extends AnyFlatSpec with Matchers with PrivateMethodTester {
   private val team: Team = Team(
@@ -30,13 +32,13 @@ class ApiFootballClientSpec extends AnyFlatSpec with Matchers with PrivateMethod
     surface = Some("grass"),
     image = Some("https://media.api-sports.io/football/venues/593.png"))
 
-  private def apiFootballClientRequest[F[_], R: Decoder](client: ApiFootballClient[F], uri: Uri): String = {
-    val request = PrivateMethod[String](Symbol("request"))
+  private def apiFootballClientRequest[F[_], R: Decoder](client: ApiFootballClient[F], uri: Uri): F[String] = {
+    val request = PrivateMethod[F[String]](Symbol("request"))
     client invokePrivate request(uri, implicitly[Decoder[R]])
   }
 
   "Football API Client" should "search teams (some results)" in {
-    val sttpBackend = SttpBackendStub.synchronous
+    val sttpBackend = SttpBackendStub[Try, Any](TryMonad)
       .whenRequestMatches { request =>
         request.uri.path == List("teams") &&
           request.uri.params.get("search").contains("tottenham")
@@ -56,11 +58,11 @@ class ApiFootballClientSpec extends AnyFlatSpec with Matchers with PrivateMethod
     val client = ApiFootballClient(sttpBackend)
     val actual = client.searchTeams("tottenham")
 
-    actual shouldEqual List(team)
+    actual shouldEqual Success(List(team))
   }
 
   it should "search teams (no results)" in {
-    val sttpBackend = SttpBackendStub.synchronous
+    val sttpBackend = SttpBackendStub[Try, Any](TryMonad)
       .whenRequestMatches { request =>
         request.uri.path == List("teams") &&
           request.uri.params.get("search").contains("no such team")
@@ -80,11 +82,11 @@ class ApiFootballClientSpec extends AnyFlatSpec with Matchers with PrivateMethod
     val client = ApiFootballClient(sttpBackend)
     val actual = client.searchTeams("no such team")
 
-    actual shouldEqual List.empty
+    actual shouldEqual Success(List.empty)
   }
 
   it should "get team by id (exists)" in {
-    val sttpBackend = SttpBackendStub.synchronous
+    val sttpBackend = SttpBackendStub[Try, Any](TryMonad)
       .whenRequestMatches { request =>
         request.uri.path == List("teams") &&
           request.uri.params.get("id").contains("47")
@@ -104,11 +106,11 @@ class ApiFootballClientSpec extends AnyFlatSpec with Matchers with PrivateMethod
     val client = ApiFootballClient(sttpBackend)
     val actual = client.getTeamById(47)
 
-    actual shouldEqual Some(team)
+    actual shouldEqual Success(Some(team))
   }
 
   it should "get team by id (does not exist)" in {
-    val sttpBackend = SttpBackendStub.synchronous
+    val sttpBackend = SttpBackendStub[Try, Any](TryMonad)
       .whenRequestMatches { request =>
         request.uri.path == List("teams") &&
           request.uri.params.get("id").contains("999")
@@ -128,11 +130,11 @@ class ApiFootballClientSpec extends AnyFlatSpec with Matchers with PrivateMethod
     val client = ApiFootballClient(sttpBackend)
     val actual = client.getTeamById(999)
 
-    actual shouldEqual None
+    actual shouldEqual Success(None)
   }
 
   it should "fail to get team by id (multiple results)" in {
-    val sttpBackend = SttpBackendStub.synchronous
+    val sttpBackend = SttpBackendStub[Try, Any](TryMonad)
       .whenRequestMatches { request =>
         request.uri.path == List("teams") &&
           request.uri.params.get("id").contains("47")
@@ -150,60 +152,67 @@ class ApiFootballClientSpec extends AnyFlatSpec with Matchers with PrivateMethod
       }
 
     val client = ApiFootballClient(sttpBackend)
+    val actual = client.getTeamById(47)
 
-    val exception = intercept[Exception](client.getTeamById(47))
-    exception.getMessage shouldEqual "More than one team found for id 47"
+    actual match {
+      case Failure(e) => e.getMessage shouldEqual "More than one team found for id 47"
+      case _ => fail()
+    }
   }
 
   it should "fail request when its unsuccessful (error during request)" in {
-    val sttpBackend = SttpBackendStub.synchronous
+    val sttpBackend = SttpBackendStub[Try, Any](TryMonad)
       .whenAnyRequest
-      .thenRespondF(IdMonad.error[SttpResponse[String]](new Exception("some error")))
+      .thenRespondF(Failure(new Exception("some error")))
 
     val client = ApiFootballClient(sttpBackend)
+    val actual = apiFootballClientRequest[Try, String](client, uri"https://test.dev/whatever")
 
-    val exception = intercept[Exception] {
-      apiFootballClientRequest[Identity, String](client, uri"https://test.dev/whatever")
+    actual match {
+      case Failure(e) => e.getMessage shouldEqual "some error"
+      case _ => fail()
     }
-    exception.getMessage shouldEqual "some error"
   }
 
   it should "fail request when its unsuccessful (parse response)" in {
-    val sttpBackend = SttpBackendStub.synchronous
+    val sttpBackend = SttpBackendStub[Try, Any](TryMonad)
       .whenAnyRequest
       .thenRespond(SttpResponse("{}", StatusCode.Ok))
 
     val client = ApiFootballClient(sttpBackend)
+    val actual = apiFootballClientRequest[Try, String](client, uri"https://test.dev/whatever")
 
-    val exception = intercept[Exception] {
-      apiFootballClientRequest[Identity, String](client, uri"https://test.dev/whatever")
+    actual match {
+      case Failure(e) => e.getMessage should startWith("Failed to decode response body")
+      case _ => fail()
     }
-    exception.getMessage should startWith("Failed to decode response body")
   }
 
   it should "fail request when its unsuccessful (error status)" in {
-    val sttpBackend = SttpBackendStub.synchronous
+    val sttpBackend = SttpBackendStub[Try, Any](TryMonad)
       .whenAnyRequest
       .thenRespond(SttpResponse(ErrorResponse("some error").asJson.noSpaces, StatusCode.BadRequest))
 
     val client = ApiFootballClient(sttpBackend)
+    val actual = apiFootballClientRequest[Try, String](client, uri"https://test.dev/whatever")
 
-    val exception = intercept[Exception] {
-      apiFootballClientRequest[Identity, String](client, uri"https://test.dev/whatever")
+    actual match {
+      case Failure(e) => e.getMessage shouldEqual "some error"
+      case _ => fail()
     }
-    exception.getMessage shouldEqual "some error"
   }
 
   it should "fail request when its unsuccessful (parse error response)" in {
-    val sttpBackend = SttpBackendStub.synchronous
+    val sttpBackend = SttpBackendStub[Try, Any](TryMonad)
       .whenAnyRequest
       .thenRespond(SttpResponse("{}", StatusCode.BadRequest))
 
     val client = ApiFootballClient(sttpBackend)
+    val actual = apiFootballClientRequest[Try, String](client, uri"https://test.dev/whatever")
 
-    val exception = intercept[Exception] {
-      apiFootballClientRequest[Identity, String](client, uri"https://test.dev/whatever")
+    actual match {
+      case Failure(e) => e.getMessage should startWith("Failed to decode error response body")
+      case _ => fail()
     }
-    exception.getMessage should startWith("Failed to decode error response body")
   }
 }
