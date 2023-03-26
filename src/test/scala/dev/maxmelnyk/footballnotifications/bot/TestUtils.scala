@@ -3,12 +3,12 @@ package dev.maxmelnyk.footballnotifications.bot
 import com.bot4s.telegram.models.{CallbackQuery, Chat, ChatType, Message, User}
 
 object TestUtils {
-  def textMessage(text: String): Message = {
+  def textMessage(text: Option[String] = None): Message = {
     Message(
       messageId = 0,
       chat = Chat(0, ChatType.Private),
       date = 0,
-      text = Some(text))
+      text = text)
   }
 
   def callbackQuery(message: Option[Message] = None,

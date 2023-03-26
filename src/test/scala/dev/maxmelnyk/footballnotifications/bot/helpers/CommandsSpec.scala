@@ -3,8 +3,7 @@ package dev.maxmelnyk.footballnotifications.bot.helpers
 import com.bot4s.telegram.api.RequestHandler
 import com.bot4s.telegram.methods.SendMessage
 import com.bot4s.telegram.models.Message
-import dev.maxmelnyk.footballnotifications.bot.TestUtils.textMessage
-import dev.maxmelnyk.footballnotifications.bot.{TestBot, TestRequestHandler}
+import dev.maxmelnyk.footballnotifications.bot.{TestBot, TestRequestHandler, TestUtils}
 import org.scalamock.scalatest.MockFactory
 import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should.Matchers
@@ -31,7 +30,7 @@ class CommandsSpec extends AnyFlatSpec with Matchers with MockFactory {
         .never()
     }
 
-    testBot.receiveExtMessage((textMessage("/test"), None))
+    testBot.receiveExtMessage((TestUtils.textMessage(Some("/test")), None))
   }
 
   it should "reply error in case of failure" in {
@@ -50,6 +49,6 @@ class CommandsSpec extends AnyFlatSpec with Matchers with MockFactory {
         .atLeastOnce()
     }
 
-    testBot.receiveExtMessage((textMessage("/test"), None))
+    testBot.receiveExtMessage((TestUtils.textMessage(Some("/test")), None))
   }
 }
